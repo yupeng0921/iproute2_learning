@@ -87,3 +87,34 @@ show tcp internal information
 * backoff:<icsk_backoff> :
   used for exponential backoff retranmission, the actual retranmission
   timeout vaule should be icsk_rto << icsk_backoff
+* rtt:<rtt>/<rttvar>
+  rtt is the average round trip time, rttvar is the mean deviation of
+  rtt, their units are millisecond
+* ato:<ato>
+  ack timeout, unit is millisecond, used for delay ack mode
+* mss:<mss>
+  max segment size
+* cwnd:<cwnd>
+  congestion window size
+* ssthresh:<ssthresh>
+  tcp congestion window slow start threshold
+* bytes_acked:<bytes_acked>
+  bytes acked
+* bytes_received:<bytes_received>
+  bytes received
+* segs_out:<segs_out>
+  segments sent out
+* segs_in:<segs_in>
+  segments received
+* send <send_bps>bps
+  send out bps
+* lastsnd:<lastsnd>
+  how long time since the last package sent, the unit is millisecond
+* lastrcv
+  how long time since the last package received, the unit is millisecond
+* lastack:<lastack>
+  how long time since the last ack received, the unit is millisecond
+* pacing_rate <pacing_rate>bps/<max_pacing_rate>bps
+  the pacing rate and max pacing rate
+* rcv_space:<rcv_space>
+  a helper variable for tunning socket receive buffer
