@@ -6,7 +6,7 @@ Show memory information. Format:
 
     skmem:(r<rmem_alloc>,rb<rcv_buf>,t<wmem_alloc>,tb<snd_buf>,f<fwd_alloc>,w<wmem_queued>,o<opt_mem>,bl<backlog>)
 
-* <rmem_alloc>:
+* <rmem_alloc>:  
   the memory allocated for receiving package
 * <rcv_buf>:
   the total memory can be allocated for receive package
