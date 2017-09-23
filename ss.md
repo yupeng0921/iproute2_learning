@@ -27,7 +27,7 @@ Show memory information. Format:
 * <opt_mem>  
   The memory used for store socket option, e.g., the key for TCP MD5
   signature.
-* <backlog>  
+* <back_log>  
   The memory used for the sk backlog queue. On a process context, if
   the process is receving package, and a new package comes, it will be
   put into the sk backlog queue, so it can be received by the process
