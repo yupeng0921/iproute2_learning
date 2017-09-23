@@ -4,7 +4,7 @@ document explains the format base on the TCP protocol
 ## -m option
 Show memory information. Format:
 
-    skmem:(r<rmem_alloc>,rb<rcv_buf>,t<wmem_alloc>,tb<snd_buf>,f<fwd_alloc>,w<wmem_queued>,o<opt_mem>,bl<backlog>)
+    skmem:(r<rmem_alloc>,rb<rcv_buf>,t<wmem_alloc>,tb<snd_buf>,f<fwd_alloc>,w<wmem_queued>,o<opt_mem>,bl<back_log>)
 
 * <rmem_alloc>  
   the memory allocated for receiving package
