@@ -57,7 +57,7 @@ Show additional socket information. Format:
   the user id the socket belongs to
 * <inode_number>  
   the socket's inode number in VFS
-* <cookie>  
+* <cookie\>  
   an uuid of the socket
 
 ## -i option
