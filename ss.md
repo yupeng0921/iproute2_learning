@@ -85,7 +85,7 @@ show tcp internal information
 * backoff:<icsk_backoff>  
   used for exponential backoff retransmission, the actual retransmission
   timeout vaule is icsk_rto << icsk_backoff
-* rtt:<rtt>/<rttvar>  
+* rtt:<rtt\>/<rttvar\>  
   rtt is the average round trip time, rttvar is the mean deviation of
   rtt, their units are millisecond
 * ato:<ato>  
