@@ -9,27 +9,25 @@ Show memory information. Format:
 * <rmem_alloc>  
   the memory allocated for receiving package
 * <rcv_buf>  
-  the total memory can be allocated for receive package
+  the total memory can be allocated for receiving package
 * <wmem_alloc>  
-  the memory allocated for sending package, the package has
-  been sent to IP layer, but not been acked.
+  the memory used for sending package (which has been sent to layer 3).
 * <snd_buf>  
-  the total memory can be allocated for send package
+  the total memory can be allocated for sending package
 * <fwd_alloc>  
   the memory allocated by the socket as cache, but not used for
-  receive/send pacakge yet. If need memory to send/receive package,
+  receiving/sending pacakge yet. If need memory to send/receive package,
   the memory in this cache will be used before allocate additional
   memory.
 * <wmem_queued>  
-  The memory allocated for sending package, the package has not yet
-  been sent to IP layer, which means the package is queued in the
-  socket.
+  The memory allocated for sending package (which has not been sent to
+  layer 3).
 * <opt_mem>  
-  The memory used for store socket option, e.g., the key for TCP MD5
+  The memory used for storing socket option, e.g., the key for TCP MD5
   signature.
 * <back_log>  
   The memory used for the sk backlog queue. On a process context, if
-  the process is receving package, and a new package comes, it will be
+  the process is receving package, and a new package is received, it will be
   put into the sk backlog queue, so it can be received by the process
   immediately.
 
@@ -48,7 +46,7 @@ Show timer information. Format:
 * <expire_time>  
   how long time the timer will expire
 * retrans  
-  how may times the retran occurs
+  how many times the retran occurs
 
 ## -e option
 Show additional socket information. Format:
@@ -56,7 +54,7 @@ Show additional socket information. Format:
     uid:<uid_number> ino:<inode_number> sk:<cookie>
 
 * <uid_number>  
-  the user id if the socket belongs to a user
+  the user id the socket belongs to
 * <inode_number>  
   the socket's inode number in VFS
 * <cookie>  
@@ -73,20 +71,20 @@ show tcp internal information
   show string "ecn" if the explicit congestion notification option is
   set
 * ecnseen  
-  show string "ecnseen" if the saw enc flag in received package
+  show string "ecnseen" if the saw ecn flag is found in received packages
 * fastopen  
   show string "fastopen" if the fastopen option is set
 * cong_alg  
   the congestion algorithm name, the default congestion algorithm is
   "cubic"
 * wscale:<snd_wscale>:<rcv_wscale>  
-  if window scale option is used, will show the send scale factory and
+  if window scale option is used, this field shows the send scale factory and
   receive scale factory
 * rto:<icsk_rto>  
-  tcp retransmission timeout value, the unit is usecond
+  tcp retransmission timeout value, the unit is millisecond
 * backoff:<icsk_backoff>  
-  used for exponential backoff retranmission, the actual retranmission
-  timeout vaule should be icsk_rto << icsk_backoff
+  used for exponential backoff retransmission, the actual retransmission
+  timeout vaule is icsk_rto << icsk_backoff
 * rtt:<rtt>/<rttvar>  
   rtt is the average round trip time, rttvar is the mean deviation of
   rtt, their units are millisecond
@@ -107,7 +105,7 @@ show tcp internal information
 * segs_in:<segs_in>  
   segments received
 * send <send_bps>bps  
-  send out bps
+  egress bps
 * lastsnd:<lastsnd>  
   how long time since the last package sent, the unit is millisecond
 * lastrcv  
@@ -117,4 +115,4 @@ show tcp internal information
 * pacing_rate <pacing_rate>bps/<max_pacing_rate>bps  
   the pacing rate and max pacing rate
 * rcv_space:<rcv_space>  
-  a helper variable for tunning socket receive buffer
+  a helper variable for TCP internal auto tunning socket receive buffer
