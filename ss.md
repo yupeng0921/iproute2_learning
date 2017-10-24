@@ -88,29 +88,29 @@ show tcp internal information
 * rtt:<rtt\>/<rttvar\>  
   rtt is the average round trip time, rttvar is the mean deviation of
   rtt, their units are millisecond
-* ato:<ato>  
+* ato:<ato\>  
   ack timeout, unit is millisecond, used for delay ack mode
-* mss:<mss>  
+* mss:<mss\>  
   max segment size
-* cwnd:<cwnd>  
+* cwnd:<cwnd\>  
   congestion window size
-* ssthresh:<ssthresh>  
+* ssthresh:<ssthresh\>  
   tcp congestion window slow start threshold
-* bytes_acked:<bytes_acked>  
+* bytes_acked:<bytes_acked\>  
   bytes acked
-* bytes_received:<bytes_received>  
+* bytes_received:<bytes_received\>  
   bytes received
-* segs_out:<segs_out>  
+* segs_out:<segs_out\>  
   segments sent out
-* segs_in:<segs_in>  
+* segs_in:<segs_in\>  
   segments received
 * send <send_bps>bps  
   egress bps
-* lastsnd:<lastsnd>  
+* lastsnd:<lastsnd\>  
   how long time since the last package sent, the unit is millisecond
-* lastrcv  
+* lastrcv:<lastrcv\>  
   how long time since the last package received, the unit is millisecond
-* lastack:<lastack>  
+* lastack:<lastack\>  
   how long time since the last ack received, the unit is millisecond
 * pacing_rate <pacing_rate>bps/<max_pacing_rate>bps  
   the pacing rate and max pacing rate
