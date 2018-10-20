@@ -1,4 +1,5 @@
 # nstat usage
+
 ## data source
 nstat get network statistics from several places:
 /proc/net/netstat
@@ -7,12 +8,18 @@ nstat get network statistics from several places:
 /proc/net/sctp/snmp
 ## history file location
 by default, the history file is:
+
 /tmp/.nstat.u<your_uid>
+
 e.g., if the uid of current user is 1000, the history file would be:
+
 /tmp/.nstat.u1000
+
 You could overwrite it by setting the NSTAT_HISTORY environment
 variable.
+
 ## daemon mode
+
 The '-d <interval>' option could let nstat run in daemon mode. In daemon mode,
 nstat doesn't generate any output, nor update history file. It just
 get the statistics for every <interval> seconds.
@@ -21,14 +28,16 @@ will try to find whether there is a nstat daemon, if there is a nstat
 daemon, instead of get statistics from /proc, the nstat will get
 statistics from the nstat daemon. Actually, below is the nstat search
 path:
-1 if current user has a nstat daemon, try to get statistics from it
-2 if the root use has a nstat daemon, try to get statistics from it
-3 get statistics from /proc
+1. if current user has a nstat daemon, try to get statistics from it
+2. if the root use has a nstat daemon, try to get statistics from it
+3. get statistics from /proc
 When you use the  '-d <interval>' option, you could combine it with a
 '-t <time_constant>' option. It will keep the average value of the
 statistics for the last <time_constant> seconds. For example, if you
 run:
+
 nstat -d 10 -t 60
+
 The nstat daemon will get statistics for every 10 seconds, and keep a
 60 seconds average value. Then, every time you run 'nstat', the nstat
 command will get the current value and the average value from the
