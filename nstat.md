@@ -106,50 +106,50 @@ Some of them are defined by rfc1213:
 
   [rfc1213 page 26](https://tools.ietf.org/html/rfc1213#page-26)
 
-
-    The total number of input datagrams received from
-    interfaces, including those received in error.
+  The total number of input datagrams received from
+  interfaces, including those received in error.
 
 * IpInDelivers
 
   [rfc1213 page 28](https://tools.ietf.org/html/rfc1213#page-28)
 
-    The total number of input datagrams successfully
-    delivered to IP user-protocols (including ICMP).
+  The total number of input datagrams successfully
+  delivered to IP user-protocols (including ICMP).
   
 * IpOutRequests
 
   [rfc1213 page 28](https://tools.ietf.org/html/rfc1213#page-28)
 
-    The total number of IP datagrams which local IP
-    user-protocols (including ICMP) supplied to IP in
-    requests for transmission.  Note that this counter
-    does not include any datagrams counted in
-    ipForwDatagrams.
+  The total number of IP datagrams which local IP
+  user-protocols (including ICMP) supplied to IP in
+  requests for transmission.  Note that this counter
+  does not include any datagrams counted in
+  ipForwDatagrams.
 
 * IcmpInMsgs
 
   [rfc1213 page 41](https://tools.ietf.org/html/rfc1213#page-41)
 
-    The total number of ICMP messages which the
-    entity received.  Note that this counter includes
-    all those counted by icmpInErrors.
+  The total number of ICMP messages which the
+  entity received.  Note that this counter includes
+  all those counted by icmpInErrors.
 
 * IcmpInEchoReps
 
   [rfc1213 page 42](https://tools.ietf.org/html/rfc1213#page-42)
 
-    The number of ICMP Echo Reply messages received.
+  The number of ICMP Echo Reply messages received.
 
 * IcmpOutMsgs
   [rfc1213 page 43](https://tools.ietf.org/html/rfc1213#page-43)
 
-    The total number of ICMP messages which this
-    entity attempted to send.  Note that this counter
-    includes all those counted by icmpOutErrors.
+  The total number of ICMP messages which this
+  entity attempted to send.  Note that this counter
+  includes all those counted by icmpOutErrors.
 
 * IcmpOutEchos
+
   [rfc1213 page 45](https://tools.ietf.org/html/rfc1213#page-45)
 
-    The number of ICMP Echo (request) messages sent.
+  The number of ICMP Echo (request) messages sent.
 
