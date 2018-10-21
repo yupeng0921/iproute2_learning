@@ -103,18 +103,22 @@ Below is the nstat result:
 Some of them are defined by rfc1213:
 
 * IpInReceives
+
   [rfc1213 page 26](https://tools.ietf.org/html/rfc1213#page-26)
+
 
     The total number of input datagrams received from
     interfaces, including those received in error.
 
 * IpInDelivers
+
   [rfc1213 page 28](https://tools.ietf.org/html/rfc1213#page-28)
 
     The total number of input datagrams successfully
     delivered to IP user-protocols (including ICMP).
   
 * IpOutRequests
+
   [rfc1213 page 28](https://tools.ietf.org/html/rfc1213#page-28)
 
     The total number of IP datagrams which local IP
@@ -124,6 +128,7 @@ Some of them are defined by rfc1213:
     ipForwDatagrams.
 
 * IcmpInMsgs
+
   [rfc1213 page 41](https://tools.ietf.org/html/rfc1213#page-41)
 
     The total number of ICMP messages which the
@@ -131,6 +136,7 @@ Some of them are defined by rfc1213:
     all those counted by icmpInErrors.
 
 * IcmpInEchoReps
+
   [rfc1213 page 42](https://tools.ietf.org/html/rfc1213#page-42)
 
     The number of ICMP Echo Reply messages received.
