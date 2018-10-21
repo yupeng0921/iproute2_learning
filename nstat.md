@@ -100,7 +100,7 @@ Below is the nstat result:
     IpExtOutOctets                  84                 0.0
     IpExtInNoECTPkts                1                  0.0
 
-Some of them are defined by rfc1213:
+### defined by rfc1213:
 
 * IpInReceives
 
@@ -153,3 +153,57 @@ Some of them are defined by rfc1213:
 
   The number of ICMP Echo (request) messages sent.
 
+IcmpMsgInType0 and IcmpMsgOutType8 are not defined by any snmp related
+RFCs, but theyir meaning are quite straightforward, they count the
+packet number of specific icmp packet types. We could find the icmp
+types here:
+
+<https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml>
+
+Type 8 is echo, type 0 is echo reply.
+
+Until now, we can easily explain these items of the nstat: We sent a
+icmp echo request, so IpOutRequests, IcmpOutMsgs, IcmpOutEchos and
+IcmpMsgOutType8 were increased 1. We got icmp echo reply from 8.8.8.8,
+so IpInReceives, IcmpInMsgs, IcmpInEchoReps, IcmpMsgInType0 were
+increased 1. The icmp echo reply was passed to icmp layer via ip
+layer, so IpInDelivers was increased 1.
+
+Please note, these metrics don't aware LRO/GRO, e.g., IpOutRequests
+might count 1 packet, but hardware splites it to 2, and sends them
+separately.
+
+### IpExtInOctets and IpExtOutOctets
+
+They are linux kernel extentions, no rfc definiations. Please note,
+rfc1213 indeed defines
+[ifInOctets](https://tools.ietf.org/html/rfc1213#page-20) and
+[ifOutOctets](https://tools.ietf.org/html/rfc1213#page-22), but they
+are not the same things. The ifInOctets and ifOutOctets are packets
+size which include the mac layer. But IpExtInOctets and IpExtOutOctets
+don't inlucde mac layer.
+
+In our example, an ICMP echo request has four parts:
+* 14 bytes mac header
+* 20 bytes ip header
+* 16 bytes icmp header
+* 48 bytes data (default value of the ping command)
+
+So IpExtInOctets value is 20+16+48=84. The IpExtOutOctets is similar.
+
+### IpExtInNoECTPkts
+We could find IpExtInNoECTPkts in the nstat output, but kernel provide
+four similar statistics, we explain them together, they are:
+* IpExtInNoECTPkts
+* IpExtInECT1Pkts
+* IpExtInECT0Pkts
+* IpExtInCEPkts
+
+They indicate four kind of ECN IP packets, they are defined here:
+
+<https://tools.ietf.org/html/rfc3168#page-6>
+
+These 4 statistics count how many packets received per ECN
+status. They count the real frame number regardless the LRO/GRO. So
+for a same packet, you might find that IpInReceives count 1, but
+IpExtInNoECTPkts counts 2 or more.
