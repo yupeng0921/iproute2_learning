@@ -207,3 +207,54 @@ These 4 statistics count how many packets received per ECN
 status. They count the real frame number regardless the LRO/GRO. So
 for a same packet, you might find that IpInReceives count 1, but
 IpExtInNoECTPkts counts 2 or more.
+
+### additional explain
+The ip layer stastics are recorded by the ip layer code in
+kernel. I mean, if you send packet to a lower layer directly, Linux
+kernel won't recorded it. For exmaple, tcpreplay will open an
+AF_PACKET socket, and send packet to layer 2, although it could send
+an IP packet, you can't find it from the nstat output. Here is an
+exmaple:
+
+We capture the ping packet by tcpdump
+
+    ubuntu@nstat-a:~$ sudo tcpdump -w /tmp/ping.pcap dst 8.8.8.8
+
+Then run ping command:
+
+    ubuntu@nstat-a:~$ ping 8.8.8.8 -c 1
+
+Terminate tcpdump by Ctrl-C, and run 'nstat -n' to update the nstat
+history. Then run tcpreplay:
+
+    ubuntu@nstat-a:~$ sudo tcpreplay --intf1=ens3 /tmp/ping.pcap
+    Actual: 1 packets (98 bytes) sent in 0.000278 seconds
+    Rated: 352517.9 Bps, 2.82 Mbps, 3597.12 pps
+    Flows: 1 flows, 3597.12 fps, 1 flow packets, 0 non-flow
+    Statistics for network device: ens3
+            Successful packets:        1
+            Failed packets:            0
+            Truncated packets:         0
+            Retried packets (ENOBUFS): 0
+            Retried packets (EAGAIN):  0
+
+Check the nstat output:
+
+    ubuntu@nstat-a:~$ nstat
+    #kernel
+    IpInReceives                    1                  0.0
+    IpInDelivers                    1                  0.0
+    IcmpInMsgs                      1                  0.0
+    IcmpInEchoReps                  1                  0.0
+    IcmpMsgInType0                  1                  0.0
+    IpExtInOctets                   84                 0.0
+    IpExtInNoECTPkts                1                  0.0
+
+We can see, nstat only show the received packet, because the IP layer
+of kernel only know the reply of 8.8.8.8, it doesn't know what
+tcpreplay sent.
+
+At the same time, when you use AF_INET socket, even you use the
+SOCK_RAW option, the IP layer will still try to verify wether the
+packet is an ICMP packet, if it is, kernel will still count it to its
+stasticis and you can find it in the output of nstat.
