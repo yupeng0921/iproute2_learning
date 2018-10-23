@@ -258,3 +258,31 @@ At the same time, when you use AF_INET socket, even you use the
 SOCK_RAW option, the IP layer will still try to verify wether the
 packet is an ICMP packet, if it is, kernel will still count it to its
 stasticis and you can find it in the output of nstat.
+
+## simple tcp examples
+
+### tcp 3 way handshake
+On server side, we run:
+
+    ubuntu@nstat-b:~$ nc -lknv 0.0.0.0 9000
+    Listening on [0.0.0.0] (family 0, port 9000)
+
+On client side, we run:
+
+    ubuntu@nstat-a:~$ nc -nv 192.168.122.251 9000
+    Connection to 192.168.122.251 9000 port [tcp/*] succeeded!
+
+On server side, we can find below nstat output:
+
+    ubuntu@nstat-b:~$ nstat | grep -i tcp
+    TcpPassiveOpens                 1                  0.0
+    TcpInSegs                       2                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPPureAcks               1                  0.0
+
+On client side, we can find below nstat output:
+
+    ubuntu@nstat-a:~$ nstat | grep -i tcp
+    TcpActiveOpens                  1                  0.0
+    TcpInSegs                       1                  0.0
+    TcpOutSegs                      2                  0.0
