@@ -521,5 +521,26 @@ statistics we didn't mention in prevous examples.
                 in tcp_input.c. 
 
 * TcpExtTCPAbortOnData
-  
-  
+
+  Send rst when all of these conditions are satisfied: so_linger
+  option of the socket is enabled, lingertime is 0, data need to be
+  sent when close a connection.
+
+* TcpExtTCPAbortOnClose
+
+  Send rst when app closes a connection but has unread data. Refer
+  [rfc2525 2.17 section](https://tools.ietf.org/html/rfc2525#page-50)
+
+* TcpExtTCPRcvCoalesce
+
+  merge two tcp segment together
+
+* TcpExtTCPOFOQueue
+
+* TcpExtTCPSackRecovery
+
+* TcpExtTCPFastRetrans
+
+* TcpExtTCPLossProbes
+
+* TcpExtTCPSackShiftFallback
