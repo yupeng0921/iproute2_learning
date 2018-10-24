@@ -286,3 +286,115 @@ On client side, we can find below nstat output:
     TcpActiveOpens                  1                  0.0
     TcpInSegs                       1                  0.0
     TcpOutSegs                      2                  0.0
+
+Except TcpExtTCPPureAcks, all other statistics are defined by rfc1213
+
+* TcpActiveOpens
+
+  [rfc1213 page 47](https://tools.ietf.org/html/rfc1213#page-47)
+
+  The number of times TCP connections have made a
+  direct transition to the SYN-SENT state from the
+  CLOSED state.
+
+* TcpPassiveOpens
+
+  [rfc1213 page 47](https://tools.ietf.org/html/rfc1213#page-47)
+
+  The number of times TCP connections have made a
+  direct transition to the SYN-RCVD state from the
+  LISTEN state.
+
+* TcpInSegs
+
+  [rfc1213 page 48](https://tools.ietf.org/html/rfc1213#page-48)
+
+  The total number of segments received, including
+  those received in error.  This count includes
+  segments received on currently established
+  connections.
+
+* TcpOutSegs
+
+  [rfc1213 page 48](https://tools.ietf.org/html/rfc1213#page-48)
+
+  The total number of segments sent, including
+  those on current connections but excluding those
+  containing only retransmitted octets.
+
+The TcpExtTCPPureAcks is an extention in linux kernel. When kernel
+receives a TCP packet which set ACK flag and with no data,
+TcpExtTCPPureAcks will increase 1.
+
+Now we can easily explain the nstat outputs on server side and client
+side.
+
+When server received the first syn, it reply a syn+ack, and came into
+SYN-RCVD state, so TcpPassiveOpens increased 1. The server received
+syn, sent syn+ack, received ack, so server sent 1 packet, received 2
+packets, TcpInSegs increased 2, TcpOutSegs increased 1. The last ack
+of the 3 way handshake is a pure ack without data, so
+TcpExtTCPPureAcks increased 1.
+
+When client sent syn, the client came into SYN-SENT state, so
+TcpActiveOpens increased 1, client sent syn, received syn+ack, sent
+ack, so client sent 2 packets, received 1 packet, TcpInSegs increased
+1, TcpOutSegs increased 2.
+
+Note: about TcpInSegs and TcpOutSegs, rfc1213 doens't define the
+behaviors when gso/gro/tso are enabled on the NIC (network interface
+card). On current linux implementation, TcpOutSegs awares gso/tso, but
+TcpInSegs doesn't aware gro. So TcpOutSegs will count the actual
+packet number even only 1 packet is sent via tcp layer. If mutiple
+packets arrived at a NIC, and they are merged to 1 packet, TcpInSegs
+will only count 1.
+
+
+### tcp disconnect
+
+Continue our previous example, on the server side, we run
+
+    ubuntu@nstat-b:~$ nc -lknv 0.0.0.0 9000
+    Listening on [0.0.0.0] (family 0, port 9000)
+
+On client side, we run
+
+    ubuntu@nstat-a:~$ nc -nv 192.168.122.251 9000
+    Connection to 192.168.122.251 9000 port [tcp/*] succeeded!
+
+Now we type Ctrl-C on client side, stop the tcp connection between the
+two nc command. Then we check the nstat output.
+
+On server side:
+
+    ubuntu@nstat-b:~$ nstat | grep -i tcp
+    TcpInSegs                       2                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPPureAcks               1                  0.0
+    TcpExtTCPOrigDataSent           1                  0.0
+
+On client side:
+
+    ubuntu@nstat-b:~$ nstat | grep -i tcp
+    TcpInSegs                       2                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPPureAcks               1                  0.0
+    TcpExtTCPOrigDataSent           1                  0.0
+
+Wait for more than 1 minute, run nstat on client again:
+
+    ubuntu@nstat-a:~$ nstat | grep -i tcp
+    TcpExtTW                        1                  0.0
+
+Most of the statistics are explained in the previous section except
+two: TcpExtTCPOrigDataSent and TcpExtTW. Both of them are linux kernel
+extentions.
+
+TcpExtTW means a tcp connection is closed normally via
+time wait stage, not via tcp reuse process.
+
+About TcpExtTCPOrigDataSent, the [kernel patch
+comment](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f19c29e3e391a66a273e9afebaf01917245148cd)
+has a good explain for it, I pasted it here:
+
+TCPOrigDataSent: number of outgoing packets with original data (excluding retransmission but including data-in-SYN). This counter is different from TcpOutSegs because TcpOutSegs also tracks pure ACKs. TCPOrigDataSent is more useful to track the TCP retransmission rate.
