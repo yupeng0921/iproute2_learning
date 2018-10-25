@@ -399,148 +399,99 @@ has a good explain for it, I pasted it here:
 
 TCPOrigDataSent: number of outgoing packets with original data (excluding retransmission but including data-in-SYN). This counter is different from TcpOutSegs because TcpOutSegs also tracks pure ACKs. TCPOrigDataSent is more useful to track the TCP retransmission rate.
 
-## iperf3 test
+## the effect of gso and gro
 
-### disable gso, gro and tso
-To keep things simple, we disable gso, gro and tso on both server and
-client. We run below commands on both server and client:
+The Generic Segmentation Offload (GSO) and Generic Receive Offload
+would affect the metrics of packet in/out on both ip and tcp
+layer. Here is an iperf example. Before the test, run below command to
+make sure both gso and gro are enbaled on the NIC:
 
-    $ sudo ethtool -K ens3 gso off
-    $ sudo ethtool -K ens3 gro off
-    $ sudo ethtool -K ens3 tso off
+    $ sudo ethtool -k ens3 | egrep '(generic-segmentation-offload|generic-receive-offload)'
+    generic-segmentation-offload: on
+    generic-receive-offload: on
 
-On server side, we run:
+On server side, run:
 
     iperf3 -s -p 9000
 
-On client side, we run:
+On client side, run:
 
     iperf3 -c 192.168.122.251 -p 9000 -t 5 -P 10
 
-The server listened on tcp port 9000, client connect to the server, create 10
-threads parallel, run 5 seconds. After the pierf3 stop, we run nstat
-on both the server and client.
+The server listened on tcp port 9000, client connected to the server,
+created 10 threads parallel, run 5 seconds. After the pierf3 stopped, we
+run nstat on both the server and cleint.
 
-Server side nstat output:
+On server side:
 
     ubuntu@nstat-b:~$ nstat
     #kernel
-    IpInReceives                    34805              0.0
-    IpInDelivers                    34805              0.0
-    IpOutRequests                   14181              0.0
+    IpInReceives                    36346              0.0
+    IpInDelivers                    36346              0.0
+    IpOutRequests                   33836              0.0
     TcpPassiveOpens                 11                 0.0
-    TcpEstabResets                  8                  0.0
-    TcpInSegs                       34805              0.0
-    TcpOutSegs                      14181              0.0
-    TcpOutRsts                      33                 0.0
-    TcpExtDelayedACKs               678                0.0
-    TcpExtTCPHPHits                 33217              0.0
-    TcpExtTCPPureAcks               12                 0.0
-    TcpExtTCPHPAcks                 6                  0.0
-    TcpExtTCPAbortOnData            2                  0.0
-    TcpExtTCPAbortOnClose           8                  0.0
-    TcpExtTCPRcvCoalesce            20952              0.0
-    TcpExtTCPOFOQueue               22                 0.0
-    TcpExtTCPOrigDataSent           10                 0.0
-    IpExtInOctets                   52078263           0.0
-    IpExtOutOctets                  738468             0.0
-    IpExtInNoECTPkts                34805              0.0
+    TcpEstabResets                  2                  0.0
+    TcpInSegs                       36346              0.0
+    TcpOutSegs                      33836              0.0
+    TcpOutRsts                      20                 0.0
+    TcpExtDelayedACKs               26                 0.0
+    TcpExtTCPHPHits                 32120              0.0
+    TcpExtTCPPureAcks               16                 0.0
+    TcpExtTCPHPAcks                 5                  0.0
+    TcpExtTCPAbortOnData            5                  0.0
+    TcpExtTCPAbortOnClose           2                  0.0
+    TcpExtTCPRcvCoalesce            7306               0.0
+    TcpExtTCPOFOQueue               1354               0.0
+    TcpExtTCPOrigDataSent           15                 0.0
+    IpExtInOctets                   311732432          0.0
+    IpExtOutOctets                  1785119            0.0
+    IpExtInNoECTPkts                214032             0.0
 
-Client side nstat output:
+Client side:
 
     ubuntu@nstat-a:~$ nstat
     #kernel
-    IpInReceives                    14181              0.0
-    IpInDelivers                    14181              0.0
-    IpOutRequests                   34818              0.0
+    IpInReceives                    33836              0.0
+    IpInDelivers                    33836              0.0
+    IpOutRequests                   43786              0.0
     TcpActiveOpens                  11                 0.0
     TcpEstabResets                  10                 0.0
-    TcpInSegs                       14181              0.0
-    TcpOutSegs                      34805              0.0
-    TcpRetransSegs                  13                 0.0
-    TcpExtDelayedACKs               2                  0.0
-    TcpExtTCPHPHits                 6                  0.0
-    TcpExtTCPPureAcks               726                0.0
-    TcpExtTCPHPAcks                 13402              0.0
-    TcpExtTCPSackRecovery           3                  0.0
-    TcpExtTCPFastRetrans            13                 0.0
-    TcpExtTCPLossProbes             1                  0.0
-    TcpExtTCPSackShiftFallback      22                 0.0
-    TcpExtTCPRcvCoalesce            1                  0.0
-    TcpExtTCPOrigDataSent           34776              0.0
-    IpExtInOctets                   738618             0.0
-    IpExtOutOctets                  52097763           0.0
-    IpExtInNoECTPkts                14181              0.0
+    TcpInSegs                       33836              0.0
+    TcpOutSegs                      214072             0.0
+    TcpRetransSegs                  3876               0.0
+    TcpExtDelayedACKs               7                  0.0
+    TcpExtTCPHPHits                 5                  0.0
+    TcpExtTCPPureAcks               2719               0.0
+    TcpExtTCPHPAcks                 31071              0.0
+    TcpExtTCPSackRecovery           607                0.0
+    TcpExtTCPSACKReorder            61                 0.0
+    TcpExtTCPLostRetransmit         90                 0.0
+    TcpExtTCPFastRetrans            3806               0.0
+    TcpExtTCPSlowStartRetrans       62                 0.0
+    TcpExtTCPLossProbes             38                 0.0
+    TcpExtTCPSackRecoveryFail       8                  0.0
+    TcpExtTCPSackShifted            203                0.0
+    TcpExtTCPSackMerged             778                0.0
+    TcpExtTCPSackShiftFallback      700                0.0
+    TcpExtTCPSpuriousRtxHostQueues  4                  0.0
+    TcpExtTCPAutoCorking            14                 0.0
+    TcpExtTCPOrigDataSent           214038             0.0
+    TcpExtTCPHystartTrainDetect     8                  0.0
+    TcpExtTCPHystartTrainCwnd       172                0.0
+    IpExtInOctets                   1785227            0.0
+    IpExtOutOctets                  317789680          0.0
+    IpExtInNoECTPkts                33836              0.0
 
-The server's TcpInSegs and the client's TcpOutSegs are equal, the
-server's TcpOutSegs and the client's TcpInSegs are equal. So their
-ingress/outgress traffic are matched exactly. Below we focus on the
-statistics we didn't mention in prevous examples.
+The TcpOutSegs and IpOutRequests on the server are 33836, exactly the
+same as IpExtInNoECTPkts, IpInReceives, IpInDelivers and TcpInSegs on
+the client side. Durng iperf3 test, server only reply very short
+packets, so gso and gro has no effect on the server's reply.
 
-* TcpEstabResets
-
-  [rfc1213 page 48](https://tools.ietf.org/html/rfc1213#page-48)
-  The number of times TCP connections have made a
-  direct transition to the CLOSED state from either
-  the ESTABLISHED state or the CLOSE-WAIT state.
-
-* TcpExtDelayedACKs
-
-  Kerenl setup a timer, if no data is received after the timer fired,
-  kernel will send ack, and increase 1 to this statistics.
-
-* TcpExtTCPHPHits
-
-  Means the received packet is handled by the fast path of the tcp
-  stack. About what is fast path, the comment in kernel code provides
-  a good explain:
-
-       It is split into a fast path and a slow path. The fast path is
-       disabled when:
-    	- A zero window was announced from us - zero window probing
-            is only handled properly in the slow path.
-    	- Out of order segments arrived.
-    	- Urgent data is expected.
-    	- There is no buffer space left
-    	- Unexpected TCP flags/window values/header lengths are received
-    	  (detected by checking the TCP header against pred_flags)
-    	- Data is sent in both directions. Fast path only supports pure senders
-    	  or pure receivers (this means either the sequence number or the ack
-    	  value must stay constant)
-    	- Unexpected TCP option.
-
-* TcpExtTCPHPAcks
-
-  [kernel mail
-  list](http://lkml.iu.edu/hypermail/linux/kernel/0211.1/1886.html)
-  provides an explain, I paste it below:
-
-    TCPHPAcks - An ack received in TCP fast path. i.e.
-                header prediction path. In sequence ack
-                that moves the window. See tcp_ack()
-                in tcp_input.c. 
-
-* TcpExtTCPAbortOnData
-
-  Send rst when all of these conditions are satisfied: so_linger
-  option of the socket is enabled, lingertime is 0, data need to be
-  sent when close a connection.
-
-* TcpExtTCPAbortOnClose
-
-  Send rst when app closes a connection but has unread data. Refer
-  [rfc2525 2.17 section](https://tools.ietf.org/html/rfc2525#page-50)
-
-* TcpExtTCPRcvCoalesce
-
-  merge two tcp segment together
-
-* TcpExtTCPOFOQueue
-
-* TcpExtTCPSackRecovery
-
-* TcpExtTCPFastRetrans
-
-* TcpExtTCPLossProbes
-
-* TcpExtTCPSackShiftFallback
+On the client side, TcpOutSegs is 214072, IpOutRequests is 43786, the
+tcp layer packet out is larger than ip layer packet out, because
+TcpOutSegs count the packet number after gso, but IpOutRequests
+doesn't. On the server side, IpExtInNoECTPkts is 214032, this number
+is smaller a little than the TcpOutSegs on client side (214072), it
+might cause by the packet loss. The IpInReceives, IpInDelivers and
+TcpInSegs are obviously smaller than the TcpOutSegs on client side,
+because these statistics count the packet after gro.
