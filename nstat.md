@@ -495,3 +495,94 @@ is smaller a little than the TcpOutSegs on client side (214072), it
 might cause by the packet loss. The IpInReceives, IpInDelivers and
 TcpInSegs are obviously smaller than the TcpOutSegs on client side,
 because these statistics count the packet after gro.
+
+## tcp abort
+Some statistics indicate the reaons why tcp layer want to send a rst,
+they are:
+* TcpExtTCPAbortOnData
+* TcpExtTCPAbortOnClose
+* TcpExtTCPAbortOnMemory
+* TcpExtTCPAbortOnTimeout
+* TcpExtTCPAbortOnLinger
+* TcpExtTCPAbortFailed
+
+### TcpExtTCPAbortOnData
+It means tcp layer has data in flight, but need to close the
+connection. So tcp layer sends a rst to the other side, indicate the
+connection is not closed very graceful.
+An easy way to increase this statistic is using the SO_LINGER
+option. Please refer the SO_LINGER section of the [socket man
+page](http://man7.org/linux/man-pages/man7/socket.7.html). By default,
+when an application close a connectoin, the close function will return
+immediately and kernel will try to send the in flight data async. If
+you use the SO_LINGER option, set l_onoff to 1, and l_linger to a
+positive number, the close function won't return immediately, but wait
+for the in flight data are acked by the ohter side, the max wait time
+is l_linger seconds. If set l_onoff to 1 and set l_linger to 0, when
+application closes a connection, kernel will send a rst immedately,
+and increase the TcpExtTCPAbortOnData stastic.
+
+We run nc on the server side:
+
+    ubuntu@nstat-b:~$ nc -lkv 0.0.0.0 9000
+    Listening on [0.0.0.0] (family 0, port 9000)
+
+Run below python code on client side:
+
+    import socket
+    import struct
+    
+    server = 'nstat-b' # server address
+    port = 9000
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+    s.connect((server, port))
+    s.close()
+
+On client side, we could see TcpExtTCPAbortOnData increased:
+
+    ubuntu@nstat-a:~$ nstat | grep -i abort
+    TcpExtTCPAbortOnData            1                  0.0
+
+If we capture packet by tcpdump, we could see the client send rst
+insead of fin.
+
+
+### TcpExtTCPAbortOnClose
+This stastic means the tcp layer has unreaded data when application
+want to close the connection.
+
+On server side, we run below python script:
+
+    import socket
+    import time
+    
+    port = 9000
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', port))
+    s.listen(1)
+    sock, addr = s.accept()
+    while True:
+        time.sleep(9999999)
+
+This python script listen on 9000 port, but doesn't read anything from
+the connection.
+
+On client side, we send string "hello" by nc:
+
+    ubuntu@nstat-a:~$ echo "hello" | nc nstat-b 9000
+
+Then, we come back to server side, server has received the "hello"
+packet, and tcp layer has acked this packet, but application didn't
+read it yet. We type Ctrl-C to terminate the server script. Then we
+could find TcpExtTCPAbortOnClose increased 1 on the server side:
+
+    ubuntu@nstat-b:~$ nstat | grep -i abort
+    TcpExtTCPAbortOnClose           1                  0.0
+
+If we run tcpdump on the server side, we could find the server sent a
+rst after we type Ctrl-C.
+
+### TcpExtTCPAbortOnMemory
