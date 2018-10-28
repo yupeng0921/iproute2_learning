@@ -698,3 +698,86 @@ keep 10 orphan sockets, for all other orphan sockets, the client
 systme sent rst for them and delet them. We have 64 connections, so
 the 'ss -s' command show the system has 10 orphan sockets, and the
 value of TcpExtTCPAbortOnMemory was 54.
+
+An additional explain about orphan socket count: You could find the
+exactly orphan socket count by the 'ss -s' command, but when kernel
+decide whither increases TcpExtTCPAbortOnMemory and sends rst, kernel
+doesn't alwasy check the exactly orphan socket count. For increasing
+performance, kernel check an approximate count firstly, if the
+approximate count is more than tcp_max_orphans, kernel check the
+exactly count again. So if the approximate count is less than
+tcp_max_orphans, but exactly count is more than tcp_max_orphans, you
+would find TcpExtTCPAbortOnMemory is not increased at all. If
+tcp_max_orphans is large enough, it won't occur, but if you decrease
+tcp_max_orphans to a small value like our test, you might find this
+issue. So in our test, the client set up 64 connections although the
+tcp_max_orphans is 10. If the client only set up 11 connectoins, we
+can't find the change of TcpExtTCPAbortOnMemory.
+
+### TcpExtTCPAbortOnTimeout
+This statistic will increase when any of the tcp timer expire. In this
+situation, kernel won't send rst, just give up the connection.
+Continue the previous test, we wait for several minutes, because the
+iptables on the sever blocked the traffic, server wouldn't receive
+fin, and all the client's orphan sockets would timeout on the
+FIN_WAIT_1 state finally. So we wait for a few minutes, we could find
+10 timeout on the client:
+
+    ubuntu@nstat-a:~$ nstat | grep -i abort
+    TcpExtTCPAbortOnTimeout         10                 0.0
+
+### TcpExtTCPAbortOnLinger
+When a tcp connection comes into FIN_WAIT_2 state, instead of waiting
+for the fin packet from the other side, kernel could send a rst and
+delete the socket immediately. This is not the default behavior of
+linux kernel tcp stack, but after configure socket option, you could
+let kernel follow this behavior. Below is an example.
+
+The server side code:
+
+    ubuntu@nstat-b:~$ cat server_linger.py
+    import socket
+    import time
+    
+    port = 9000
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', port))
+    s.listen(1)
+    sock, addr = s.accept()
+    while True:
+        time.sleep(9999999)
+
+The client side code:
+
+    ubuntu@nstat-a:~$ cat client_linger.py 
+    import socket
+    import struct
+    
+    server = 'nstat-b' # server address
+    port = 9000
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 10))
+    s.setsockopt(socket.SOL_TCP, socket.TCP_LINGER2, struct.pack('i', -1))                   
+    s.connect((server, port))
+    s.close()
+
+Run server_linger.py on server:
+
+    ubuntu@nstat-b:~$ python3 server_linger.py 
+
+Run client_linger.py on client:
+
+    ubuntu@nstat-a:~$ python3 client_linger.py
+
+After run client_linger.py, check the output of nstat:
+
+    ubuntu@nstat-a:~$ nstat | grep -i abort
+    TcpExtTCPAbortOnLinger          1                  0.0
+
+### TcpExtTCPAbortFailed
+The kernel tcp layer will send rst if the [RFC 2525 2.17
+section](https://tools.ietf.org/html/rfc2525#page-50) is satisfied. If
+an internal error occurs during this process, TcpExtTCPAbortFailed
+will be increased.
