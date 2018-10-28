@@ -586,3 +586,115 @@ If we run tcpdump on the server side, we could find the server sent a
 rst after we type Ctrl-C.
 
 ### TcpExtTCPAbortOnMemory
+When an application close a tcp connection, kernel still need to track
+the connection, let it complete the tcp disconnect process. E.g. an
+app calls the close method of a socket, kernel sends fin to the other
+side of of the connection, then the app has no relationship with the
+socket any more, but kernel need to keep the socket, this socket
+becomes an orphan socket, kernel waits for the reply of the oter side,
+and would come to the TIME_WAIT state fainlly. When kernel has no
+enough memory to keep the orphan socket, kernel would send an rst to
+the other side, and delet the socket, in such situation, kernel will
+increase 1 to the TcpExtTCPAbortOnMemory. Two conditions would trigger
+TcpExtTCPAbortOnMemory:
+* the memory used by tcp protocol is higher than the third value of
+the tcp_mem. Please refer the tcp_mem section in the [tcp man
+page](http://man7.org/linux/man-pages/man7/tcp.7.html).
+* the orphan socket count is higher than net.ipv4.tcp_max_orphans
+
+Below is an example which let the orpnhan socket count be higher than
+net.ipv4.tcp_max_orphans.
+
+Change tcp_max_orphans to a smaller value on client:
+
+    sudo bash -c "echo 10 > /proc/sys/net/ipv4/tcp_max_orphans"
+
+Client code (create 64 connection to server):
+
+    ubuntu@nstat-a:~$ cat client_orphan.py
+    import socket
+    import time
+    
+    server = 'nstat-b' # server address
+    port = 9000
+    
+    count = 64
+    
+    connection_list = []
+    
+    for i in range(64):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((server, port))
+        connection_list.append(s)
+        print("connection_count: %d" % len(connection_list))
+    
+    while True:
+        time.sleep(99999)
+
+Server code (accept 64 connection from client):
+
+    ubuntu@nstat-b:~$ cat server_orphan.py
+    import socket
+    import time
+    
+    port = 9000
+    count = 64
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', port))
+    s.listen(count)
+    connection_list = []
+    while True:
+        sock, addr = s.accept()
+        connection_list.append((sock, addr))
+        print("connection_count: %d" % len(connection_list))
+
+Run the python scripts on server and client.
+
+On server:
+
+    python3 server_orphan.py
+
+On client:
+
+    python3 client_orphan.py
+
+Run iptables on server:
+
+    sudo iptables -A INPUT -i ens3 -p tcp --destination-port 9000 -j DROP
+
+Type Ctrl-C on client, stop client_orphan.py.
+
+Check TcpExtTCPAbortOnMemory on client:
+
+    ubuntu@nstat-a:~$ nstat | grep -i abort
+    TcpExtTCPAbortOnMemory          54                 0.0
+
+Check orphane socket count on client:
+
+    ubuntu@nstat-a:~$ ss -s
+    Total: 131 (kernel 0)
+    TCP:   14 (estab 1, closed 0, orphaned 10, synrecv 0, timewait 0/0), ports 0
+    
+    Transport Total     IP        IPv6
+    *         0         -         -
+    RAW       1         0         1
+    UDP       1         1         0
+    TCP       14        13        1
+    INET      16        14        2
+    FRAG      0         0         0
+
+The test explain: after run server_orphan.py and client_orphan.py, we
+set up 64 connections between server and client. Run the iptables
+command, server will drop all packets from the client, type Ctrl-C on
+client_orphan.py, the system of the clent would try to close these
+connections, and before they are closed gracefully, these connections
+became orphan sockets. As the iptables of the server blocked packets
+from client, server won't receive fin from client, so all connection
+on clients would stuck on FIN_WAIT_1 stage, so they will keep as
+orphan sockets until timeout. We have echo 10 to
+/proc/sys/net/ipv4/tcp_max_orphans, so the client system would only
+keep 10 orphan sockets, for all other orphan sockets, the client
+systme sent rst for them and delet them. We have 64 connections, so
+the 'ss -s' command show the system has 10 orphan sockets, and the
+value of TcpExtTCPAbortOnMemory was 54.
