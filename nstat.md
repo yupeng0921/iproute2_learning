@@ -781,3 +781,75 @@ The kernel tcp layer will send rst if the [RFC 2525 2.17
 section](https://tools.ietf.org/html/rfc2525#page-50) is satisfied. If
 an internal error occurs during this process, TcpExtTCPAbortFailed
 will be increased.
+
+## TcpExtListenOverflows and TcpExtListenDrops
+When kernel receive a syn from a client, and if the tcp accept queue
+is full, kernel will drop the syn and add 1 to TcpExtListenOverflows.
+At the same time kernel will also add 1 to TcpExtListenDrops. When
+a tcp socket is in LISTEN state, and kerenl need to drop a packet,
+kernel would always add 1 to TcpExtListenDrops. So increase
+TcpExtListenOverflows would let TcpExtListenDrops increasing at the
+same time, but TcpExtListenDrops would also increase without
+TcpExtListenOverflows increasing, e.g. a memory allocation fail would
+also let TcpExtListenDrops increase.
+
+Note: The above explain bases on ubuntu 18.04 kernel (4.15), on an old
+kernel such as ubuntu 16.04, the tcp stack has different behavior when
+tcp accept queue is full. On the old kernel, tcp stack won't drop the
+syn, it would complete the 3 way handshake, but as the accept queue is
+full, tcp stack will keep the socket in the tcp half open queue. As it
+is in the half open queue, tcp stack will send syn+ack on an
+exponential backoff timer, after client replies ack, tcp stack checks
+whether the accept queue is still full, if it is not full, move the
+socket to accept queue, if it is full, keeps the socket in the half
+open queue, at next time client replies ack, this socket will get
+another change to move to the accept queue.
+
+Here is an example:
+
+On server, run the nc command, listen on port 9000:
+
+    ubuntu@nstat-b:~$ nc -lkv 0.0.0.0 9000
+    Listening on [0.0.0.0] (family 0, port 9000)
+
+On client, run 3 nc commands in different terminals:
+
+    ubuntu@nstat-a:~$ nc -v nstat-b 9000
+    Connection to nstat-b 9000 port [tcp/*] succeeded!
+
+The nc command only accept 1 connection, and the accept queue length
+is 1. On current linux implementation, set queue length to n means the
+actual queue length is n+1. Now we create 3 connections, 1 is accepted
+by nc, 2 in accepted queue, so the acceput queue is full.
+
+Before run the 4th nc, we clean the nstat history on server:
+
+    ubuntu@nstat-b:~$ nstat -n
+
+Run the 4th nc on client:
+
+    ubuntu@nstat-a:~$ nc -v nstat-b 9000
+
+If the nc server is running on ubuntu 18.04 or higher version, you
+won't see the "Connection to ... succeeded!" string, because kernel
+will drop the syn if accept queue is full. If the nc client is running
+on an old kernel, you could see that the connection is succeeded,
+because kernel would complete the 3 way handshake and keep the socket
+on half open queue.
+
+Our test is on ubuntu 18.04, run nstat on the server:
+
+    ubuntu@nstat-b:~$ nstat
+    #kernel
+    IpInReceives                    4                  0.0
+    IpInDelivers                    4                  0.0
+    TcpInSegs                       4                  0.0
+    TcpExtListenOverflows           4                  0.0
+    TcpExtListenDrops               4                  0.0
+    IpExtInOctets                   240                0.0
+    IpExtInNoECTPkts                4                  0.0
+
+We can see both TcpExtListenOverflows and TcpExtListenDrops are
+4. If the time between the 4th nc and the nstat is longer, the value
+of TcpExtListenOverflows and TcpExtListenDrops will be larger, because
+the syn of the 4th nc is dropped, it keeps retrying.
