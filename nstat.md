@@ -496,6 +496,19 @@ might cause by the packet loss. The IpInReceives, IpInDelivers and
 TcpInSegs are obviously smaller than the TcpOutSegs on client side,
 because these statistics count the packet after gro.
 
+## several tcp statistics in normal situation
+
+Run nc on server:
+
+    ubuntu@nstat-b:~$ nc -lkv 0.0.0.0 9000
+    Listening on [0.0.0.0] (family 0, port 9000)
+
+Run nc on client:
+
+    ubuntu@nstat-a:~$ nc -v nstat-b 9000
+    Connection to nstat-b 9000 port [tcp/*] succeeded!
+
+
 ## tcp abort
 Some statistics indicate the reaons why tcp layer want to send a rst,
 they are:
