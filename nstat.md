@@ -72,7 +72,7 @@ computer. The os is ubuntu 18.04. Before every experiment, I run
 'nstat -n' to update the nstat history, so the nstat outputs after the
 experiments won't be impacted by previous network traffic.
 
-## a simple ping
+## icmp ping
 Run the ping command against the public dns server 8.8.8.8
 
     ubuntu@nstat-a:~$ ping 8.8.8.8 -c 1
@@ -83,7 +83,7 @@ Run the ping command against the public dns server 8.8.8.8
     1 packets transmitted, 1 received, 0% packet loss, time 0ms
     rtt min/avg/max/mdev = 17.875/17.875/17.875/0.000 ms
 
-Below is the nstat result:
+The nstat result:
 
     ubuntu@nstat-a:~$ nstat
     #kernel
@@ -100,7 +100,12 @@ Below is the nstat result:
     IpExtOutOctets                  84                 0.0
     IpExtInNoECTPkts                1                  0.0
 
-### defined by rfc1213:
+The nstat output could be devided to two part: one with the 'Ext'
+keyword, another without the 'Ext' keyword. If the statistic name
+doesn't have 'Ext', it is defined by one of snmp rfc, if it has 'Ext',
+it is a kernel extention statistic. Below we explaines them one by one.
+
+### The rfc defined statistics
 
 * IpInReceives
 
@@ -179,9 +184,9 @@ They are linux kernel extentions, no rfc definiations. Please note,
 rfc1213 indeed defines
 [ifInOctets](https://tools.ietf.org/html/rfc1213#page-20) and
 [ifOutOctets](https://tools.ietf.org/html/rfc1213#page-22), but they
-are not the same things. The ifInOctets and ifOutOctets are packets
+are different things. The ifInOctets and ifOutOctets are packets
 size which include the mac layer. But IpExtInOctets and IpExtOutOctets
-don't inlucde mac layer.
+are only ip layer sizes.
 
 In our example, an ICMP echo request has four parts:
 * 14 bytes mac header
@@ -259,9 +264,8 @@ SOCK_RAW option, the IP layer will still try to verify wether the
 packet is an ICMP packet, if it is, kernel will still count it to its
 stasticis and you can find it in the output of nstat.
 
-## simple tcp examples
+## tcp 3 way handshake
 
-### tcp 3 way handshake
 On server side, we run:
 
     ubuntu@nstat-b:~$ nc -lknv 0.0.0.0 9000
@@ -271,6 +275,9 @@ On client side, we run:
 
     ubuntu@nstat-a:~$ nc -nv 192.168.122.251 9000
     Connection to 192.168.122.251 9000 port [tcp/*] succeeded!
+
+The server listened on tcp 9000 port, client connected to it, they
+completed the 3 way handshake.
 
 On server side, we can find below nstat output:
 
@@ -324,7 +331,8 @@ Except TcpExtTCPPureAcks, all other statistics are defined by rfc1213
 
 The TcpExtTCPPureAcks is an extention in linux kernel. When kernel
 receives a TCP packet which set ACK flag and with no data,
-TcpExtTCPPureAcks will increase 1.
+TcpExtTCPPureAcks will increase 1. We will dissuss it in later
+section.
 
 Now we can easily explain the nstat outputs on server side and client
 side.
@@ -350,7 +358,7 @@ packets arrived at a NIC, and they are merged to 1 packet, TcpInSegs
 will only count 1.
 
 
-### tcp disconnect
+## tcp disconnect
 
 Continue our previous example, on the server side, we run
 
@@ -496,7 +504,7 @@ might cause by the packet loss. The IpInReceives, IpInDelivers and
 TcpInSegs are obviously smaller than the TcpOutSegs on client side,
 because these statistics count the packet after gro.
 
-## several tcp statistics in normal situation
+## tcp statistics in connection established state
 
 Run nc on server:
 
@@ -507,6 +515,105 @@ Run nc on client:
 
     ubuntu@nstat-a:~$ nc -v nstat-b 9000
     Connection to nstat-b 9000 port [tcp/*] succeeded!
+
+
+Input a string in the nc client ('hello' in our example):
+
+    ubuntu@nstat-a:~$ nc -v nstat-b 9000
+    Connection to nstat-b 9000 port [tcp/*] succeeded!
+    hello
+
+The client side nstat output:
+
+    ubuntu@nstat-a:~$ nstat
+    #kernel
+    IpInReceives                    1                  0.0
+    IpInDelivers                    1                  0.0
+    IpOutRequests                   1                  0.0
+    TcpInSegs                       1                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPPureAcks               1                  0.0
+    TcpExtTCPOrigDataSent           1                  0.0
+    IpExtInOctets                   52                 0.0
+    IpExtOutOctets                  58                 0.0
+    IpExtInNoECTPkts                1                  0.0
+
+The server side nstat output:
+
+    ubuntu@nstat-b:~$ nstat
+    #kernel
+    IpInReceives                    1                  0.0
+    IpInDelivers                    1                  0.0
+    IpOutRequests                   1                  0.0
+    TcpInSegs                       1                  0.0
+    TcpOutSegs                      1                  0.0
+    IpExtInOctets                   58                 0.0
+    IpExtOutOctets                  52                 0.0
+    IpExtInNoECTPkts                1                  0.0
+
+Input a string in nc client side again ('world' in our exmaple):
+
+    ubuntu@nstat-a:~$ nc -v nstat-b 9000
+    Connection to nstat-b 9000 port [tcp/*] succeeded!
+    hello
+    world
+
+Client side nstat output:
+
+    ubuntu@nstat-a:~$ nstat
+    #kernel
+    IpInReceives                    1                  0.0
+    IpInDelivers                    1                  0.0
+    IpOutRequests                   1                  0.0
+    TcpInSegs                       1                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPHPAcks                 1                  0.0
+    TcpExtTCPOrigDataSent           1                  0.0
+    IpExtInOctets                   52                 0.0
+    IpExtOutOctets                  58                 0.0
+    IpExtInNoECTPkts                1                  0.0
+
+
+Server side nstat output:
+
+    ubuntu@nstat-b:~$ nstat
+    #kernel
+    IpInReceives                    1                  0.0
+    IpInDelivers                    1                  0.0
+    IpOutRequests                   1                  0.0
+    TcpInSegs                       1                  0.0
+    TcpOutSegs                      1                  0.0
+    TcpExtTCPHPHits                 1                  0.0
+    IpExtInOctets                   58                 0.0
+    IpExtOutOctets                  52                 0.0
+    IpExtInNoECTPkts                1                  0.0
+
+Compare the first client side output and the second client side
+output, we could find one difference: the first one had a
+'TcpExtTCPPureAcks', but the second one had a
+'TcpExtTCPHPAcks'. The first server side ouput and the second server
+side output had a difference too: the second server side output had a
+TcpExtTCPHPHits, but the first server side output didn't have it. The
+network traffic patterns were exactly the same: client sent a packet to
+server, server replied an ack. But kernel handled them in different
+ways. When kernel receives a tpc packet in the established status,
+kernel has two paths to handle the packet, one is fast path, another
+is slow path. The comment in kernel code provides a good explain of
+them, I paste them below:
+
+    It is split into a fast path and a slow path. The fast path is
+    disabled when:
+    - A zero window was announced from us - zero window probing
+      is only handled properly in the slow path.
+    - Out of order segments arrived.
+    - Urgent data is expected.
+    - There is no buffer space left
+    - Unexpected TCP flags/window values/header lengths are received
+      (detected by checking the TCP header against pred_flags)
+    - Data is sent in both directions. Fast path only supports pure senders
+      or pure receivers (this means either the sequence number or the ack
+      value must stay constant)
+    - Unexpected TCP option.
 
 
 ## tcp abort
