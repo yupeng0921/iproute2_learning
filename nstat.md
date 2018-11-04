@@ -615,6 +615,15 @@ them, I paste them below:
       value must stay constant)
     - Unexpected TCP option.
 
+Kernel will try to use fast path unless any of the above conditions
+are satisfied. If the packets are out of order, kernel will handle
+them in slow path, which means the performance might be not very
+good. Kerenl would also come into slow path if the "Delayed ack" is
+used, becuase when using "Delayed ack", the data is sent in boht
+direction. When the tcp window scale option is not used, kernel will
+try to enable fast path immediately when the connection come into established
+state, but if the tcp window scal option is used, kernel will disable
+the fast path at first, and try to enable it after kerenl receives packets.
 
 ## tcp abort
 Some statistics indicate the reaons why tcp layer want to send a rst,
