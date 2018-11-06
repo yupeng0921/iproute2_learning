@@ -504,7 +504,7 @@ might cause by the packet loss. The IpInReceives, IpInDelivers and
 TcpInSegs are obviously smaller than the TcpOutSegs on client side,
 because these statistics count the packet after gro.
 
-## tcp statistics in connection established state
+## tcp statistics in established state
 
 Run nc on server:
 
@@ -622,8 +622,33 @@ good. Kerenl would also come into slow path if the "Delayed ack" is
 used, becuase when using "Delayed ack", the data is sent in boht
 direction. When the tcp window scale option is not used, kernel will
 try to enable fast path immediately when the connection come into established
-state, but if the tcp window scal option is used, kernel will disable
-the fast path at first, and try to enable it after kerenl receives packets.
+state, but if the tcp window scale option is used, kernel will disable
+the fast path at first, and try to enable it after kerenl receives
+packets. We could use the 'ss' command to verify whether the window
+scale option is used. e.g. run below command on either server or
+client:
+
+    ubuntu@nstat-a:~$ ss -o state established -i '( dport = :9000 or sport = :9000 )
+    Netid    Recv-Q     Send-Q            Local Address:Port             Peer Address:Port     
+    tcp      0          0               192.168.122.250:40654         192.168.122.251:9000     
+             ts sack cubic wscale:7,7 rto:204 rtt:0.98/0.49 mss:1448 pmtu:1500 rcvmss:536 advmss:1448 cwnd:10 bytes_acked:1 segs_out:2 segs_in:1 send 118.2Mbps lastsnd:46572 lastrcv:46572 lastack:46572 pacing_rate 236.4Mbps rcv_space:29200 rcv_ssthresh:29200 minrtt:0.98
+
+The 'wscale:7,7' means both server and client set the window scale
+option to 7. Now we could explain the nstat output in our test:
+
+In the first nstat output of client side, client sent a packet, server
+reply an ack, when kernel handled this ack, the fast path was not
+enabled, so the ack was counted into 'TcpExtTCPPureAcks'.
+In the second nstat output of client side, client sent a packet again,
+and received another ack from server, this time, the fast path is
+enabled, and the ack was qualify for fast path, so it was handled by
+the fast path, so this ack was counted into TcpExtTCPHPAcks.
+In the first nstat output of server side, fast path was not enabled,
+so there was no 'TcpExtTCPHPHits'.
+In the second nstat output of server side, the fast path was enabled,
+and the packet received from client was qualify for fast path, so it
+was counted into 'TcpExtTCPHPHits'.
+
 
 ## tcp abort
 Some statistics indicate the reaons why tcp layer want to send a rst,
