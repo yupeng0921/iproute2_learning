@@ -104,7 +104,7 @@ The nstat output could be devided to two part: one with the 'Ext'
 keyword, another without the 'Ext' keyword. If the statistic name
 doesn't have 'Ext', it is defined by one of snmp rfc, if it has 'Ext',
 it is a kernel extention statistic. Below we explaines them one by one.
-
+   
 ### The rfc defined statistics
 
 * IpInReceives
@@ -159,7 +159,7 @@ it is a kernel extention statistic. Below we explaines them one by one.
   The number of ICMP Echo (request) messages sent.
 
 IcmpMsgInType0 and IcmpMsgOutType8 are not defined by any snmp related
-RFCs, but theyir meaning are quite straightforward, they count the
+RFCs, but their meaning are quite straightforward, they count the
 packet number of specific icmp packet types. We could find the icmp
 types here:
 
@@ -330,9 +330,9 @@ Except TcpExtTCPPureAcks, all other statistics are defined by rfc1213
   containing only retransmitted octets.
 
 The TcpExtTCPPureAcks is an extention in linux kernel. When kernel
-receives a TCP packet which set ACK flag and with no data,
-TcpExtTCPPureAcks will increase 1. We will dissuss it in later
-section.
+receives a TCP packet which set ACK flag and with no data, either
+TcpExtTCPPureAcks or TcpExtTCPHPAcks will increase 1. We will dissuss
+it in later section.
 
 Now we can easily explain the nstat outputs on server side and client
 side.
